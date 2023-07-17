@@ -13,7 +13,7 @@ def crear_tabla_productos():
     conn = sqlite3.connect('productos.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS productos
-                 (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL, stock INTEGER)''')
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, precio REAL, stock INTEGER)''')
     conn.commit()
     conn.close()
 
@@ -26,41 +26,81 @@ class Producto:
         self.stock = stock
 
     def guardar(self):
-        conn = sqlite3.connect('productos.db')
-        c = conn.cursor()
-        c.execute("INSERT INTO productos (id, nombre, precio, stock) VALUES (?, ?, ?, ?)",
-                  (self.id, self.nombre, self.precio, self.stock))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)",
+                      (self.nombre, self.precio, self.stock))
+            conn.commit()
+            conn.close()
+
+        except sqlite3.Error as e:
+            error_message = 'Ocurrió un error de SQLite: ' + str(e)
+            show_error_popup(error_message)
+
+        except Exception as e:
+            error_message = 'Ocurrió un error: ' + str(e)
+            show_error_popup(error_message)
 
     @staticmethod
     def obtener_todos():
-        conn = sqlite3.connect('productos.db')
-        c = conn.cursor()
-        c.execute("SELECT * FROM productos")
-        rows = c.fetchall()
-        productos = []
-        for row in rows:
-            producto = Producto(row[0], row[1], row[2], row[3])
-            productos.append(producto)
-        conn.close()
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            c.execute("SELECT * FROM productos")
+            rows = c.fetchall()
+            productos = []
+            for row in rows:
+                producto = Producto(row[0], row[1], row[2], row[3])
+                productos.append(producto)
+            conn.close()
+
+        except sqlite3.Error as e:
+            # Manejar cualquier excepción específica de SQLite que pueda ocurrir
+            print('Ocurrió un error de SQLite:', str(e))
+
+        except Exception as e:
+            # Manejar cualquier otra excepción que pueda ocurrir
+            print('Ocurrió un error:', str(e))
+
         return productos
 
     def actualizar(self):
-        conn = sqlite3.connect('productos.db')
-        c = conn.cursor()
-        c.execute("UPDATE productos SET nombre=?, precio=?, stock=? WHERE id=?",
-                  (self.nombre, self.precio, self.stock, self.id))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            c.execute("UPDATE productos SET nombre=?, precio=?, stock=? WHERE id=?",
+                      (self.nombre, self.precio, self.stock, self.id))
+            conn.commit()
+            conn.close()
+
+        except sqlite3.Error as e:
+            error_message = 'Ocurrió un error de SQLite: ' + str(e)
+            show_error_popup(error_message)
+
+        except Exception as e:
+            error_message = 'Ocurrió un error: ' + str(e)
+            show_error_popup(error_message)
 
     def eliminar(self):
-        conn = sqlite3.connect('productos.db')
-        c = conn.cursor()
-        c.execute("DELETE FROM productos WHERE id=?", (self.id,))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            c.execute("DELETE FROM productos WHERE id=?", (self.id,))
+            conn.commit()
+            conn.close()
 
+        except sqlite3.Error as e:
+            error_message = 'Ocurrió un error de SQLite: ' + str(e)
+            show_error_popup(error_message)
+
+        except Exception as e:
+            error_message = 'Ocurrió un error: ' + str(e)
+            show_error_popup(error_message)
+
+def show_error_popup(message):
+    popup = Popup(title='Error', content=Label(text=message), size_hint=(None, None), size=(400, 200))
+    popup.open()
 
 class AddProduct(BoxLayout):
     def __init__(self, list_tab, **kwargs):
@@ -70,8 +110,8 @@ class AddProduct(BoxLayout):
         self.padding = [20, 20, 20, 20]
         self.spacing = 10
 
-        self.id_input = TextInput(hint_text='ID', multiline=False, background_color=(1, 1, 1, 1))
-        self.add_widget(self.id_input)
+        #self.id_input = TextInput(hint_text='ID', multiline=False, background_color=(1, 1, 1, 1))
+        #self.add_widget(self.id_input)
 
         self.nombre_input = TextInput(hint_text='Nombre', multiline=False, background_color=(1, 1, 1, 1))
         self.add_widget(self.nombre_input)
@@ -87,22 +127,27 @@ class AddProduct(BoxLayout):
         self.add_widget(self.guardar_button)
 
     def guardar_producto(self, instance):
-        id = self.id_input.text
+        #id = self.id_input.text
         nombre = self.nombre_input.text
         precio = float(self.precio_input.text)
         stock = int(self.stock_input.text)
 
-        if id and nombre and precio and stock:
-            producto = Producto(id, nombre, precio, stock)
-            producto.guardar()
-            self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-            self.limpiar_campos()
-            self.mostrar_mensaje('Producto guardado correctamente.')
-        else:
-            self.mostrar_mensaje('Todos los campos son requeridos.')
+        try:
+            precio = float(precio)
+            stock = int(stock)
+            if nombre and precio != '' and stock != '':
+                producto = Producto(id, nombre, precio, stock)
+                producto.guardar()
+                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+                self.mostrar_mensaje('Producto guardado correctamente.')
+                self.limpiar_campos()
+            else:
+                self.mostrar_mensaje('Todos los campos son requeridos.')
+        except ValueError:
+            self.mostrar_mensaje('Error: los valores de Precio y Stock deben ser numéricos.')
 
     def limpiar_campos(self):
-        self.id_input.text = ''
+        #self.id_input.text = ''
         self.nombre_input.text = ''
         self.precio_input.text = ''
         self.stock_input.text = ''
