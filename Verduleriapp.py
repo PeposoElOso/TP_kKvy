@@ -18,6 +18,11 @@ def crear_tabla_productos():
     conn.close()
 
 
+def mostrar_mensaje(message, x):
+    popup = Popup(title='Error', content=Label(text=message), size_hint=(None, None), size=(x, 200))
+    popup.open()
+
+
 class Producto:
     def __init__(self, id, nombre, precio, stock):
         self.id = id
@@ -36,11 +41,11 @@ class Producto:
 
         except sqlite3.Error as e:
             error_message = 'Ocurrió un error de SQLite: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
         except Exception as e:
             error_message = 'Ocurrió un error: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
     @staticmethod
     def obtener_todos():
@@ -76,11 +81,11 @@ class Producto:
 
         except sqlite3.Error as e:
             error_message = 'Ocurrió un error de SQLite: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
         except Exception as e:
             error_message = 'Ocurrió un error: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
     def eliminar(self):
         try:
@@ -92,15 +97,12 @@ class Producto:
 
         except sqlite3.Error as e:
             error_message = 'Ocurrió un error de SQLite: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
         except Exception as e:
             error_message = 'Ocurrió un error: ' + str(e)
-            show_error_popup(error_message)
+            mostrar_mensaje(error_message, 400)
 
-def show_error_popup(message):
-    popup = Popup(title='Error', content=Label(text=message), size_hint=(None, None), size=(400, 200))
-    popup.open()
 
 class AddProduct(BoxLayout):
     def __init__(self, list_tab, **kwargs):
@@ -109,9 +111,6 @@ class AddProduct(BoxLayout):
         self.orientation = 'vertical'
         self.padding = [20, 20, 20, 20]
         self.spacing = 10
-
-        #self.id_input = TextInput(hint_text='ID', multiline=False, background_color=(1, 1, 1, 1))
-        #self.add_widget(self.id_input)
 
         self.nombre_input = TextInput(hint_text='Nombre', multiline=False, background_color=(1, 1, 1, 1))
         self.add_widget(self.nombre_input)
@@ -127,35 +126,37 @@ class AddProduct(BoxLayout):
         self.add_widget(self.guardar_button)
 
     def guardar_producto(self, instance):
-        #id = self.id_input.text
         nombre = self.nombre_input.text
-        precio = float(self.precio_input.text)
-        stock = int(self.stock_input.text)
+        precio = self.precio_input.text
+        stock = self.stock_input.text
 
-        try:
-            precio = float(precio)
-            stock = int(stock)
-            if nombre and precio != '' and stock != '':
-                producto = Producto(id, nombre, precio, stock)
-                producto.guardar()
-                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-                self.mostrar_mensaje('Producto guardado correctamente.')
-                self.limpiar_campos()
+        if nombre:
+            if precio.replace('.', '', 1).isdigit():
+                precio = float(precio)
             else:
-                self.mostrar_mensaje('Todos los campos son requeridos.')
-        except ValueError:
-            self.mostrar_mensaje('Error: los valores de Precio y Stock deben ser numéricos.')
+                mostrar_mensaje(
+                    'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
+                    650)
+                return
+
+            if stock.isdigit():
+                stock = int(stock)
+            else:
+                mostrar_mensaje('El valor del Stock debe ser un numero entero mayor o igual a 0.', 450)
+                return
+
+            producto = Producto(id, nombre, precio, stock)
+            producto.guardar()
+            self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+            mostrar_mensaje('Producto guardado correctamente.', 400)
+            self.limpiar_campos()
+        else:
+            mostrar_mensaje('Todos los campos son requeridos.', 400)
 
     def limpiar_campos(self):
-        #self.id_input.text = ''
         self.nombre_input.text = ''
         self.precio_input.text = ''
         self.stock_input.text = ''
-
-    def mostrar_mensaje(self, mensaje):
-        popup = Popup(title='Mensaje', content=Label(text=mensaje),
-                      size_hint=(None, None), size=(400, 200))
-        popup.open()
 
 
 class ActualizarProd(BoxLayout):
@@ -185,28 +186,40 @@ class ActualizarProd(BoxLayout):
     def actualizar_producto(self, instance):
         id = self.id_input.text
         nombre = self.nombre_input.text
-        precio = float(self.precio_input.text)
-        stock = int(self.stock_input.text)
+        precio = self.precio_input.text
+        stock = self.stock_input.text
 
-        if id and nombre and precio and stock:
-            producto = Producto(id, nombre, precio, stock)
-            producto.actualizar()
-            self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-            self.limpiar_campos()
-            self.mostrar_mensaje('Producto actualizado correctamente.')
+        if id.isdigit():
+            if nombre:
+                if precio.replace('.', '', 1).isdigit():
+                    precio = float(precio)
+                else:
+                    mostrar_mensaje(
+                        'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
+                        650)
+                    return
+
+                if stock.isdigit():
+                    stock = int(stock)
+                else:
+                    mostrar_mensaje('El valor del Stock debe ser un numero entero mayor o igual a 0.', 450)
+                    return
+
+                producto = Producto(id, nombre, precio, stock)
+                producto.guardar()
+                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+                mostrar_mensaje('Producto guardado correctamente.', 400)
+                self.limpiar_campos()
+            else:
+                mostrar_mensaje('Todos los campos son requeridos.', 400)
         else:
-            self.mostrar_mensaje('Todos los campos son requeridos.')
+            mostrar_mensaje('Debe ingresar el ID del producto', 400)
 
     def limpiar_campos(self):
         self.id_input.text = ''
         self.nombre_input.text = ''
         self.precio_input.text = ''
         self.stock_input.text = ''
-
-    def mostrar_mensaje(self, mensaje):
-        popup = Popup(title='Mensaje', content=Label(text=mensaje),
-                      size_hint=(None, None), size=(400, 200))
-        popup.open()
 
 
 class ListProductTab(BoxLayout):
@@ -250,22 +263,17 @@ class EliminarProd(BoxLayout):
     def eliminar_producto(self, instance):
         id = self.id_input.text
 
-        if id:
+        if id.isdigit():
             producto = Producto(id, '', 0, 0)
             producto.eliminar()
             self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
             self.limpiar_campos()
-            self.mostrar_mensaje('Producto eliminado correctamente.')
+            mostrar_mensaje('Producto eliminado correctamente.', 400)
         else:
-            self.mostrar_mensaje('El ID del producto es requerido.')
+            mostrar_mensaje('El ID del producto es requerido.', 400)
 
     def limpiar_campos(self):
         self.id_input.text = ''
-
-    def mostrar_mensaje(self, mensaje):
-        popup = Popup(title='Mensaje', content=Label(text=mensaje),
-                      size_hint=(None, None), size=(400, 200))
-        popup.open()
 
 
 class VerduApp(App):
@@ -277,7 +285,7 @@ class VerduApp(App):
         tabbed_panel = TabbedPanel(do_default_tab=False)
 
         list_tab = ListProductTab()
-        add_tab = TabbedPanelItem(text='Añadir', background_color=(0.2, 0.4, 0.6, 1)) #color pestaña
+        add_tab = TabbedPanelItem(text='Añadir', background_color=(0.2, 0.4, 0.6, 1))  # color pestaña
         add_tab.content = AddProduct(list_tab)
         tabbed_panel.add_widget(add_tab)
 
