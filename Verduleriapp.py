@@ -30,6 +30,48 @@ class Producto:
         self.precio = precio
         self.stock = stock
 
+    def buscar_por_id(self):
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            c.execute("select * from productos where id = ?", (self.id,))
+            resultado = c.fetchone()
+            conn.close()
+
+            if resultado is not None:
+                # Crear una instancia de Producto con los datos obtenidos de la base de datos
+                producto = Producto(resultado[0], resultado[1], resultado[2], resultado[3])
+                return producto
+            else:
+                return None
+
+        except sqlite3.Error as e:
+            error_message = 'Ocurrió un error de SQLite: ' + str(e)
+            mostrar_mensaje(error_message, 400)
+
+        except Exception as e:
+            error_message = 'Ocurrió un error: ' + str(e)
+            mostrar_mensaje(error_message, 400)
+
+    def buscar_por_nombre(self):
+        try:
+            conn = sqlite3.connect('productos.db')
+            c = conn.cursor()
+            nombre = f"%{self.nombre}%"
+            c.execute("select * from productos where nombre like ?", (nombre,))
+            resultados = c.fetchall()
+            conn.close()
+
+        except sqlite3.Error as e:
+            error_message = 'Ocurrió un error de SQLite: ' + str(e)
+            mostrar_mensaje(error_message, 400)
+
+        except Exception as e:
+            error_message = 'Ocurrió un error: ' + str(e)
+            mostrar_mensaje(error_message, 400)
+
+        return len(resultados)
+
     def guardar(self):
         try:
             conn = sqlite3.connect('productos.db')
@@ -146,10 +188,13 @@ class AddProduct(BoxLayout):
                 return
 
             producto = Producto(id, nombre, precio, stock)
-            producto.guardar()
-            self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-            mostrar_mensaje('Producto guardado correctamente.', 400)
-            self.limpiar_campos()
+            if producto.buscar_por_nombre() > 0:
+                mostrar_mensaje('Ya existe un producto con este nombre', 400)
+            else:
+                producto.guardar()
+                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+                mostrar_mensaje('Producto guardado correctamente.', 400)
+                self.limpiar_campos()
         else:
             mostrar_mensaje('Todos los campos son requeridos.', 400)
 
@@ -189,31 +234,36 @@ class ActualizarProd(BoxLayout):
         precio = self.precio_input.text
         stock = self.stock_input.text
 
+        producto = Producto(id, nombre, precio, stock)
+
         if id.isdigit():
-            if nombre:
-                if precio.replace('.', '', 1).isdigit():
-                    precio = float(precio)
-                else:
-                    mostrar_mensaje(
-                        'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
-                        650)
-                    return
+            # Verificar si el producto existe por su ID
+            if producto.buscar_por_id() is not None:
+                if nombre:
+                    if precio.replace('.', '', 1).isdigit():
+                        precio = float(precio)
+                    else:
+                        mostrar_mensaje(
+                            'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
+                            650)
+                        return
 
-                if stock.isdigit():
-                    stock = int(stock)
-                else:
-                    mostrar_mensaje('El valor del Stock debe ser un numero entero mayor o igual a 0.', 450)
-                    return
+                    if stock.isdigit() and int(stock) >= 0:
+                        stock = int(stock)
+                    else:
+                        mostrar_mensaje('El valor del Stock debe ser un número entero mayor o igual a 0.', 450)
+                        return
 
-                producto = Producto(id, nombre, precio, stock)
-                producto.guardar()
-                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-                mostrar_mensaje('Producto guardado correctamente.', 400)
-                self.limpiar_campos()
+                    producto.actualizar()
+                    self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+                    mostrar_mensaje('Producto actualizado correctamente.', 400)
+                    self.limpiar_campos()
+                else:
+                    mostrar_mensaje('Todos los campos son requeridos.', 400)
             else:
-                mostrar_mensaje('Todos los campos son requeridos.', 400)
+                mostrar_mensaje('Debe ingresar el ID de un producto existente', 400)
         else:
-            mostrar_mensaje('Debe ingresar el ID del producto', 400)
+            mostrar_mensaje('El ID debe ser un valor numérico', 400)
 
     def limpiar_campos(self):
         self.id_input.text = ''
@@ -265,12 +315,17 @@ class EliminarProd(BoxLayout):
 
         if id.isdigit():
             producto = Producto(id, '', 0, 0)
-            producto.eliminar()
-            self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
-            self.limpiar_campos()
-            mostrar_mensaje('Producto eliminado correctamente.', 400)
+            producto= producto.buscar_por_id()
+
+            if producto is not None:
+                self.limpiar_campos()
+                producto.eliminar()
+                self.list_tab.actualizar_lista()  # Actualizar la lista de productos en ListProductTab
+                mostrar_mensaje('Producto: '+producto.nombre+ ' eliminado correctamente.', 400)
+            else:
+                mostrar_mensaje('No existe un producto con ese ID', 400)
         else:
-            mostrar_mensaje('El ID del producto es requerido.', 400)
+            mostrar_mensaje('El ID del producto es requerido y debe ser numérico.', 400)
 
     def limpiar_campos(self):
         self.id_input.text = ''
