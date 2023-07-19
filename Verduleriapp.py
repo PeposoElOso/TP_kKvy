@@ -1,4 +1,5 @@
 import sqlite3
+import textwrap
 from kivy.app import App
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.uix.boxlayout import BoxLayout
@@ -19,7 +20,8 @@ def crear_tabla_productos():
 
 
 def mostrar_mensaje(message, x):
-    popup = Popup(title='Error', content=Label(text=message), size_hint=(None, None), size=(x, 200))
+    wrapped_message = textwrap.fill(message, width=60)  # Tabular el mensaje en líneas de 60 caracteres
+    popup = Popup(title='Mensaje', content=Label(text=wrapped_message), size_hint=(None, None), size=(x, 200))
     popup.open()
 
 
@@ -177,8 +179,8 @@ class AddProduct(BoxLayout):
                 precio = float(precio)
             else:
                 mostrar_mensaje(
-                    'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
-                    650)
+                    'El valor del Precio debe ser un número decimal o entero y puede contener decimales utilizando el punto (.) como separador.',
+                    500)
                 return
 
             if stock.isdigit():
@@ -245,13 +247,13 @@ class ActualizarProd(BoxLayout):
                     else:
                         mostrar_mensaje(
                             'El valor del Precio debe ser flotante o entero y puede contener decimales utilizando el punto (.)',
-                            650)
+                            500)
                         return
 
                     if stock.isdigit() and int(stock) >= 0:
                         stock = int(stock)
                     else:
-                        mostrar_mensaje('El valor del Stock debe ser un número entero mayor o igual a 0.', 450)
+                        mostrar_mensaje('El valor del Stock debe ser un número entero mayor o igual a 0.', 500)
                         return
 
                     producto.actualizar()
