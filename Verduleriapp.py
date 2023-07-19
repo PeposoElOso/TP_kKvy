@@ -8,6 +8,9 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.core.window import Window
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+
 
 
 def crear_tabla_productos():
@@ -278,13 +281,19 @@ class ListProductTab(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
-        self.padding = [-600, -200, 10, 100]
+        self.padding = [-600, 1250, 10, 100]
         self.spacing = 5
 
-        self.list_label = Label(text='')
-        self.add_widget(self.list_label)
+        self.list_label = Label(text='', size_hint_y=None)
+        self.list_label.bind(texture_size=self.list_label.setter('size'))
+        root = ScrollView(size_hint=(1, None), size=(400, 400))
+        root.add_widget(self.list_label)
+        
+       
 
         self.actualizar_lista()
+        self.add_widget(root)
+        
 
     def actualizar_lista(self):
         productos = Producto.obtener_todos()
@@ -353,13 +362,13 @@ class VerduApp(App):
         list_tab_item = TabbedPanelItem(text='Listar', background_color=(0.2, 0.4, 0.6, 1))
         list_tab_item.content = list_tab
         tabbed_panel.add_widget(list_tab_item)
+        
 
         delete_tab = TabbedPanelItem(text='Eliminar', background_color=(0.2, 0.4, 0.6, 1))
         delete_tab.content = EliminarProd(list_tab)
         tabbed_panel.add_widget(delete_tab)
 
         return tabbed_panel
-
 
 if __name__ == '__main__':
     VerduApp().run()
